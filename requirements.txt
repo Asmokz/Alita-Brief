@@ -1,0 +1,21 @@
+# Discord
+discord.py>=2.3.0
+
+# Database
+SQLAlchemy>=2.0.0
+PyMySQL>=1.1.0
+cryptography>=41.0.0
+
+# Finance
+yfinance>=0.2.30
+
+# HTTP
+aiohttp>=3.9.0
+requests>=2.31.0
+
+# Scheduling
+schedule>=1.2.0
+
+# Utils
+python-dotenv>=1.0.0
+pytz>=2023.3

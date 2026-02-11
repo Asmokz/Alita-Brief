@@ -1,0 +1,42 @@
+services:
+  alita:
+    build: .
+    container_name: alita
+    restart: unless-stopped
+    env_file: .env
+    dns:
+      - "8.8.8.8"
+      - "8.8.4.4"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      alita-db:
+        condition: service_healthy
+    networks:
+      - asmo-network
+    volumes:
+      - ./logs:/app/logs
+
+  alita-db:
+    image: mariadb:latest
+    container_name: alita-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: alita_db
+    networks:
+      - asmo-network
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - alita-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  alita-db-data:
+
+networks:
+  asmo-network:

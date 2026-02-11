@@ -1,0 +1,30 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+logs/
+
+# Docker
+alita-db-data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
