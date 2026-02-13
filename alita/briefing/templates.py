@@ -13,6 +13,8 @@ def build_briefing_embed(
     alertes: str,
     meteo: dict,
     moto_score: dict,
+    world_news: list = None,
+    tech_news: list = None,
 ) -> list[discord.Embed]:
     """Construit les embeds Discord pour le briefing matinal.
 
@@ -35,12 +37,14 @@ def build_briefing_embed(
     if cac40_data.get("top_gainers"):
         cac_text += "**🟢 Top Hausses :**\n"
         for g in cac40_data["top_gainers"][:5]:
-            cac_text += f"` {g['ticker']:>10} ` {format_pourcentage(g['variation_pct'])} ({g['prix_actuel']}€)\n"
+            nom = g.get("nom", g["ticker"])
+            cac_text += f"` {nom:>16} ` {format_pourcentage(g['variation_pct'])} ({g['prix_actuel']}€)\n"
 
     if cac40_data.get("top_losers"):
         cac_text += "\n**🔴 Top Baisses :**\n"
         for l in cac40_data["top_losers"][:5]:
-            cac_text += f"` {l['ticker']:>10} ` {format_pourcentage(l['variation_pct'])} ({l['prix_actuel']}€)\n"
+            nom = l.get("nom", l["ticker"])
+            cac_text += f"` {nom:>16} ` {format_pourcentage(l['variation_pct'])} ({l['prix_actuel']}€)\n"
 
     embed_cac.add_field(name="📈 CAC40", value=cac_text[:1024], inline=False)
 
@@ -61,39 +65,42 @@ def build_briefing_embed(
     )
 
     if portfolio_data.get("actions"):
-        # Résumé global
-        resume = (
-            f"**Investi :** {format_prix(portfolio_data['total_investi'])}\n"
-            f"**Valeur actuelle :** {format_prix(portfolio_data['total_actuel'])}\n"
-            f"**Gain/Perte :** {format_prix(portfolio_data['gain_total'])} "
-            f"({format_pourcentage(portfolio_data['gain_pct'])})\n"
-        )
-        embed_pf.add_field(name="📊 Résumé", value=resume, inline=False)
-
-        # Tableau des actions
-        tableau = ""
+        # Détail par action (format visuel amélioré)
+        portfolio_field = ""
         for a in portfolio_data["actions"]:
-            emoji = "🟢" if a["gain"] >= 0 else "🔴"
-            tableau += (
-                f"{emoji} **{a['ticker']}** ({a['nom']})\n"
-                f"  {a['quantite']}x @ {a['prix_achat']}€ → {a['prix_actuel']}€ "
-                f"| Jour: {format_pourcentage(a['variation_jour'])} "
-                f"| Total: {format_pourcentage(a['gain_pct'])} ({format_prix(a['gain'])})\n"
-            )
+            if a["gain_pct"] > 0:
+                icon = "🟢"
+            elif a["gain_pct"] < 0:
+                icon = "🔴"
+            else:
+                icon = "⚪"
 
-        # Découper si trop long
-        if len(tableau) > 1024:
-            embed_pf.add_field(name="📋 Détail", value=tableau[:1024], inline=False)
-        else:
-            embed_pf.add_field(name="📋 Détail", value=tableau, inline=False)
+            portfolio_field += f"{icon} **{a['nom']}** ({a['ticker']})\n"
+            portfolio_field += f"├─ Achat: {a['prix_achat']:.2f}€ x {a['quantite']}\n"
+            portfolio_field += f"├─ Actuel: {a['prix_actuel']:.2f}€\n"
+            portfolio_field += f"└─ Perf: {format_prix(a['gain'])} ({format_pourcentage(a['gain_pct'])})\n\n"
 
-        # Top performers du jour
-        if portfolio_data.get("top_performers"):
-            top_text = "\n".join(
-                f"{'🥇🥈🥉'[i] if i < 3 else '  '} {t['ticker']} : {format_pourcentage(t['variation_jour'])}"
-                for i, t in enumerate(portfolio_data["top_performers"][:3])
-            )
-            embed_pf.add_field(name="🏆 Top du jour", value=top_text, inline=True)
+        # Résumé global
+        portfolio_field += f"💰 **Total Portefeuille**\n"
+        portfolio_field += f"Investi: {format_prix(portfolio_data['total_investi'])}\n"
+        portfolio_field += f"Valeur actuelle: {format_prix(portfolio_data['total_actuel'])}\n"
+        portfolio_field += f"Performance: {format_prix(portfolio_data['gain_total'])} ({format_pourcentage(portfolio_data['gain_pct'])})"
+
+        embed_pf.add_field(name="💼 Mon Portefeuille PEA", value=portfolio_field[:1024], inline=False)
+
+        # Performance 24h (champ séparé)
+        perf_jour = ""
+        for a in portfolio_data["actions"]:
+            variation_jour = a.get("variation_jour", 0)
+            if variation_jour > 0:
+                perf_jour += f"🟢 {a['nom']}: +{variation_jour:.2f}%\n"
+            elif variation_jour < 0:
+                perf_jour += f"🔴 {a['nom']}: {variation_jour:.2f}%\n"
+            else:
+                perf_jour += f"⚪ {a['nom']}: stable\n"
+
+        if perf_jour:
+            embed_pf.add_field(name="📊 Performance 24h", value=perf_jour[:1024], inline=False)
     else:
         embed_pf.add_field(name="Info", value="Portfolio vide. Utilisez `/portfolio add` pour commencer.", inline=False)
 
@@ -148,6 +155,31 @@ def build_briefing_embed(
         )
 
     embeds.append(embed_meteo)
+
+    # --- Embed 5 : Actualités (si disponibles) ---
+    if world_news or tech_news:
+        embed_news = discord.Embed(
+            title="📰 Actualités du jour",
+            color=0x9B59B6,
+        )
+
+        if world_news:
+            world_field = ""
+            for article in world_news[:2]:
+                world_field += f"📰 **{article['title']}**\n"
+                world_field += f"_{article['source']}_\n"
+                world_field += f"[Lire l'article]({article['url']})\n\n"
+            embed_news.add_field(name="🌍 Actualités Mondiales", value=world_field[:1024], inline=False)
+
+        if tech_news:
+            tech_field = ""
+            for article in tech_news[:2]:
+                tech_field += f"🤖 **{article['title']}**\n"
+                tech_field += f"_{article['source']}_\n"
+                tech_field += f"[Lire l'article]({article['url']})\n\n"
+            embed_news.add_field(name="🚀 Tech & IA", value=tech_field[:1024], inline=False)
+
+        embeds.append(embed_news)
 
     # Footer sur le dernier embed
     embeds[-1].set_footer(text="Alita Bot v1.0 | ASMO-01 Homelab")

@@ -37,7 +37,18 @@ Bot Discord pour le homelab ASMO-01 qui génère un briefing matinal automatique
 1. Créer un compte sur https://openweathermap.org/
 2. Aller dans "API Keys" et copier la clé
 
-### 4. Configurer l'environnement
+### 4. Obtenir une clé NewsAPI (optionnel)
+
+1. Créer un compte gratuit sur https://newsapi.org/register
+2. Copier votre API key
+3. Ajouter dans `.env` :
+```
+NEWSAPI_KEY=votre_cle_ici
+```
+
+**Limite gratuite** : 100 requêtes/jour (largement suffisant pour 1 briefing quotidien)
+
+### 5. Configurer l'environnement
 
 ```bash
 cd /home/asmo/alita-briefing
@@ -53,8 +64,9 @@ Variables à configurer :
 | `DB_PASSWORD` | Mot de passe MariaDB |
 | `DB_ROOT_PASSWORD` | Mot de passe root MariaDB |
 | `OPENWEATHER_API_KEY` | Clé API OpenWeatherMap |
+| `NEWSAPI_KEY` | Clé API NewsAPI.org (optionnel) |
 
-### 5. Lancer
+### 6. Lancer
 
 ```bash
 docker-compose up -d
@@ -109,6 +121,7 @@ alita/
 │   ├── yahoo_finance.py # API Yahoo Finance
 │   ├── weather.py       # API OpenWeatherMap
 │   ├── moto_score.py    # Calcul score moto
+│   ├── news_api.py      # Client NewsAPI.org
 │   └── ollama_client.py # Client LLM local
 ├── database/            # Base de données
 │   ├── models.py        # Modèles SQLAlchemy

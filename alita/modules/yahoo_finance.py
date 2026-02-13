@@ -18,6 +18,58 @@ CAC40_TICKERS = [
     "URW.PA", "VIE.PA", "DG.PA", "VIV.PA", "WLN.PA",
 ]
 
+# Mapping ticker → nom complet pour affichage lisible
+CAC40_NAMES = {
+    "AIR.PA": "Airbus",
+    "AI.PA": "Air Liquide",
+    "ALO.PA": "Alstom",
+    "MT.PA": "ArcelorMittal",
+    "CS.PA": "AXA",
+    "BNP.PA": "BNP Paribas",
+    "EN.PA": "Bouygues",
+    "CAP.PA": "Capgemini",
+    "CA.PA": "Carrefour",
+    "ACA.PA": "Crédit Agricole",
+    "BN.PA": "Danone",
+    "DSY.PA": "Dassault Systèmes",
+    "ENGI.PA": "Engie",
+    "EL.PA": "EssilorLuxottica",
+    "ERF.PA": "Eurofins Scientific",
+    "RMS.PA": "Hermès",
+    "KER.PA": "Kering",
+    "LR.PA": "Legrand",
+    "OR.PA": "L'Oréal",
+    "MC.PA": "LVMH",
+    "ML.PA": "Michelin",
+    "ORA.PA": "Orange",
+    "RI.PA": "Pernod Ricard",
+    "PUB.PA": "Publicis",
+    "RNO.PA": "Renault",
+    "SAF.PA": "Safran",
+    "SGO.PA": "Saint-Gobain",
+    "SAN.PA": "Sanofi",
+    "SU.PA": "Schneider Electric",
+    "GLE.PA": "Société Générale",
+    "STLAP.PA": "Stellantis",
+    "STMPA.PA": "STMicroelectronics",
+    "TEP.PA": "Teleperformance",
+    "HO.PA": "Thales",
+    "TTE.PA": "TotalEnergies",
+    "URW.PA": "Unibail-Rodamco-Westfield",
+    "VIE.PA": "Veolia",
+    "DG.PA": "Vinci",
+    "VIV.PA": "Vivendi",
+    "WLN.PA": "Worldline",
+    # Tickers de la spec originale (alias)
+    "FP.PA": "TotalEnergies",
+    "STLAM.PA": "Stellantis",
+}
+
+
+def get_ticker_name(ticker: str) -> str:
+    """Retourne le nom complet d'une action depuis son ticker."""
+    return CAC40_NAMES.get(ticker, ticker)
+
 
 def get_ticker_price(ticker: str) -> Optional[dict]:
     """Récupère le prix actuel et la variation d'un ticker.
@@ -45,6 +97,7 @@ def get_ticker_price(ticker: str) -> Optional[dict]:
 
         return {
             "ticker": ticker,
+            "nom": get_ticker_name(ticker),
             "prix_actuel": round(prix_actuel, 2),
             "variation": round(variation, 2),
             "variation_pct": round(variation_pct, 2),

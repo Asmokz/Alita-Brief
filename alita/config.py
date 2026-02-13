@@ -31,6 +31,7 @@ class Config:
 
     # APIs
     OPENWEATHER_API_KEY: str = os.getenv("OPENWEATHER_API_KEY", "")
+    NEWSAPI_KEY: str = os.getenv("NEWSAPI_KEY", "")
 
     # Ollama
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://host.docker.internal:11434")

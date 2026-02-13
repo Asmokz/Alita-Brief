@@ -10,6 +10,7 @@ from alita.config import Config
 from alita.database.db import get_session
 from alita.database.models import BriefingLog, ConfigDB
 from alita.modules import yahoo_finance, weather, moto_score, ollama_client, portfolio
+from alita.modules.news_api import NewsAPI
 from alita.briefing.templates import build_briefing_embed
 from alita.utils.logger import logger
 from alita.utils.helpers import tronquer
@@ -103,10 +104,31 @@ async def generer_briefing() -> dict:
         meteo_data = None
         erreurs.append(f"Météo : {e}")
 
-    # 6. Score moto
+    # 5b. Prévisions horaires pour le score moto
+    hourly_forecast = None
+    try:
+        hourly_forecast = weather.get_hourly_forecast(ville, hours=12)
+    except Exception as e:
+        logger.warning("Prévisions horaires indisponibles : %s", e)
+
+    # 6. Score moto (avec prévisions 8h-19h)
     seuil_vent = float(get_config_value("moto_seuil_vent", "20"))
     seuil_pluie = float(get_config_value("moto_seuil_pluie", "50"))
-    moto_data = moto_score.calculer_score_moto(meteo_data, seuil_vent, seuil_pluie)
+    moto_data = moto_score.calculer_score_moto(meteo_data, hourly_forecast, seuil_vent, seuil_pluie)
+
+    # 6b. Actualités (fallback gracieux si API indisponible)
+    world_news = []
+    tech_news = []
+    if Config.NEWSAPI_KEY:
+        news_api = NewsAPI(Config.NEWSAPI_KEY)
+        try:
+            logger.info("Récupération actualités...")
+            world_news = news_api.get_top_headlines(category="general", max_results=2)
+            tech_news = news_api.get_tech_ai_news(max_results=2)
+        except Exception as e:
+            logger.warning("Actualités indisponibles : %s", e)
+    else:
+        logger.debug("NEWSAPI_KEY non configurée, section actualités ignorée")
 
     # 7. Construction des embeds
     logger.info("Construction des embeds Discord...")
@@ -117,6 +139,8 @@ async def generer_briefing() -> dict:
         alertes=alertes_text,
         meteo=meteo_data,
         moto_score=moto_data,
+        world_news=world_news,
+        tech_news=tech_news,
     )
 
     logger.info("=== Briefing généré avec succès (%d embeds, %d erreurs) ===", len(embeds), len(erreurs))
